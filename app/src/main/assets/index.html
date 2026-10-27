@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#102d2b">
+<title>RK Chat — Uji Lokal</title>
+<style>
+:root{color-scheme:light;--ink:#182b2a;--muted:#667774;--green:#247a66;--bg:#f2f6f4;--line:#e1e9e6;}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+header{background:#102d2b;color:#fff;padding:20px 16px 18px}header .brand{font-size:11px;letter-spacing:2px;color:#9ed3c4;font-weight:bold}header h1{font-size:24px;margin:8px 0 4px}header p{margin:0;color:#c5d6d1;font-size:13px;line-height:1.4}
+main{max-width:760px;margin:0 auto;padding:14px 12px 20px}.setup,.chatbox{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 3px 12px rgba(17,45,43,.035)}label{display:block;color:var(--muted);font-size:12px;font-weight:bold;margin-bottom:7px}input,textarea{font:inherit;border:1px solid #d7e2de;border-radius:10px;background:#fff;color:var(--ink);padding:12px;width:100%;outline:none}input:focus,textarea:focus{border-color:var(--green)}.userrow{display:flex;gap:8px}.userrow input{flex:1;min-width:0}.btn{border:0;border-radius:10px;padding:12px 14px;background:var(--green);color:#fff;font-weight:bold;font-size:13px;cursor:pointer}.btn.secondary{background:#e7efec;color:var(--ink)}.note{font-size:12px;line-height:1.5;color:var(--muted);margin:9px 0 0}
+.feed{height:48vh;min-height:240px;max-height:520px;overflow-y:auto;padding:5px 2px 10px}.empty{color:var(--muted);text-align:center;padding:36px 10px;font-size:14px}.msg{border-bottom:1px solid #edf1ef;padding:10px 4px;overflow-wrap:anywhere}.meta{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:var(--muted);margin-bottom:5px}.sender{font-size:13px;font-weight:bold;color:var(--green)}.body{font-size:14px;white-space:pre-wrap;line-height:1.45}.body a{color:#176ab0;word-break:break-word}.compose{display:flex;gap:8px;align-items:flex-end;border-top:1px solid var(--line);padding-top:12px}.compose textarea{min-height:46px;max-height:120px;resize:vertical;flex:1}.compose button{min-height:46px}.status{font-size:12px;color:var(--muted);margin-top:8px;min-height:16px}.footer{text-align:center;font-size:11px;color:#7e908b;padding:4px 12px 18px}
+@media(min-width:600px){header{text-align:center}.feed{height:52vh}.userrow{max-width:520px}}
+</style>
+</head>
+<body>
+<header><div class="brand">RK · PRIVATE PROJECT</div><h1>RK Chat</h1><p>Ruang uji chat lokal · pesan tersimpan di tablet server</p></header>
+<main>
+<section class="setup"><label for="name">NAMA KAMU</label><div class="userrow"><input id="name" maxlength="32" placeholder="Contoh: Romi" autocomplete="nickname"><button class="btn secondary" id="saveName">Simpan</button></div><p class="note">Semua orang yang membuka alamat server ini akan melihat pesan yang sama. Ini versi percobaan tanpa akun.</p></section>
+<section class="chatbox"><div class="feed" id="feed"><div class="empty">Memuat pesan…</div></div><div class="compose"><textarea id="message" maxlength="2000" rows="1" placeholder="Tulis pesan atau tautan…"></textarea><button class="btn" id="send">Kirim</button></div><div class="status" id="status">Menghubungkan ke server…</div></section>
+<div class="footer">RK Server · Versi uji Wi-Fi lokal</div>
+</main>
+<script>
+(function(){
+var nameEl=document.getElementById('name'),messageEl=document.getElementById('message'),feedEl=document.getElementById('feed'),statusEl=document.getElementById('status');
+try{nameEl.value=localStorage.getItem('rk-chat-name')||'';}catch(e){}
+function xhr(method,path,data,done){var x=new XMLHttpRequest();x.open(method,path,true);x.timeout=5000;if(method==='POST')x.setRequestHeader('Content-Type','application/json; charset=utf-8');x.onreadystatechange=function(){if(x.readyState===4){if(x.status>=200&&x.status<300){try{done(null,JSON.parse(x.responseText));}catch(e){done(e);}}else done(new Error('HTTP '+x.status));}};x.ontimeout=function(){done(new Error('Waktu koneksi habis'));};x.onerror=function(){done(new Error('Server tidak bisa dijangkau'));};x.send(data?JSON.stringify(data):null);}
+function safeLinkify(el,text){var re=/(https?:\/\/[^\s<]+)/g,at=0,m;while((m=re.exec(text))!==null){if(m.index>at)el.appendChild(document.createTextNode(text.substring(at,m.index)));var a=document.createElement('a');a.href=m[0];a.textContent=m[0];a.target='_blank';a.rel='noopener noreferrer';el.appendChild(a);at=re.lastIndex;}if(at<text.length)el.appendChild(document.createTextNode(text.substring(at)));}
+function render(items){var wasBottom=feedEl.scrollHeight-feedEl.scrollTop-feedEl.clientHeight<90;feedEl.innerHTML='';if(!items||!items.length){var empty=document.createElement('div');empty.className='empty';empty.textContent='Belum ada pesan. Kirim pesan pertama!';feedEl.appendChild(empty);return;}for(var i=0;i<items.length;i++){var it=items[i],row=document.createElement('div');row.className='msg';var meta=document.createElement('div');meta.className='meta';var sender=document.createElement('span');sender.className='sender';sender.textContent=it.sender||'Pengguna';var time=document.createElement('span');time.textContent=it.time||'';meta.appendChild(sender);meta.appendChild(time);var body=document.createElement('div');body.className='body';safeLinkify(body,it.text||'');row.appendChild(meta);row.appendChild(body);feedEl.appendChild(row);}if(wasBottom)feedEl.scrollTop=feedEl.scrollHeight;}
+function refresh(){xhr('GET','/api/messages',null,function(err,data){if(err){statusEl.textContent='Tidak dapat terhubung. Pastikan server hidup dan Wi-Fi sama.';return;}render(data.messages||[]);statusEl.textContent='Terhubung · '+(data.count||0)+' pesan tersimpan di tablet';});}
+document.getElementById('saveName').onclick=function(){var n=nameEl.value.replace(/^\s+|\s+$/g,'');if(!n){statusEl.textContent='Isi nama dulu.';return;}try{localStorage.setItem('rk-chat-name',n);}catch(e){}nameEl.value=n;statusEl.textContent='Nama disimpan pada browser ini.';};
+function send(){var n=(nameEl.value||'').replace(/^\s+|\s+$/g,'');var t=(messageEl.value||'').replace(/^\s+|\s+$/g,'');if(!n){statusEl.textContent='Isi nama kamu dahulu.';nameEl.focus();return;}if(!t){return;}if(t.length>2000){statusEl.textContent='Pesan terlalu panjang (maksimal 2000 karakter).';return;}try{localStorage.setItem('rk-chat-name',n);}catch(e){}xhr('POST','/api/messages',{sender:n,text:t},function(err,data){if(err||!data||!data.ok){statusEl.textContent='Pesan gagal dikirim. Coba lagi.';return;}messageEl.value='';refresh();});}
+document.getElementById('send').onclick=send;messageEl.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});refresh();setInterval(refresh,2500);
+})();
+</script>
+</body>
+</html>
